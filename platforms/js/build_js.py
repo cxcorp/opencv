@@ -67,10 +67,9 @@ class Builder:
         self.options = options
         self.build_dir = check_dir(options.build_dir, create=True)
         self.opencv_dir = check_dir(options.opencv_dir)
-        self.emscripten_dir = check_dir(options.emscripten_dir)
 
     def get_toolchain_file(self):
-        return os.path.join(self.emscripten_dir, "cmake", "Modules", "Platform", "Emscripten.cmake")
+        return self.options.DCMAKE_TOOLCHAIN_FILE
 
     def clean_build_dir(self):
         for d in ["CMakeCache.txt", "CMakeFiles/", "bin/", "libs/", "lib/", "modules"]:
@@ -213,16 +212,10 @@ if __name__ == "__main__":
     log.basicConfig(format='%(message)s', level=log.DEBUG)
 
     opencv_dir = os.path.abspath(os.path.join(SCRIPT_DIR, '../..'))
-    emscripten_dir = None
-    if "EMSCRIPTEN" in os.environ:
-        emscripten_dir = os.environ["EMSCRIPTEN"]
-    else:
-        log.warning("EMSCRIPTEN environment variable is not available. Please properly activate Emscripten SDK and consider using 'emcmake' launcher")
 
     parser = argparse.ArgumentParser(description='Build OpenCV.js by Emscripten')
     parser.add_argument("build_dir", help="Building directory (and output)")
     parser.add_argument('--opencv_dir', default=opencv_dir, help='Opencv source directory (default is "../.." relative to script location)')
-    parser.add_argument('--emscripten_dir', default=emscripten_dir, help="Path to Emscripten to use for build (deprecated in favor of 'emcmake' launcher)")
     parser.add_argument('--build_wasm', action="store_true", help="Build OpenCV.js in WebAssembly format")
     parser.add_argument('--disable_wasm', action="store_true", help="Build OpenCV.js in Asm.js format")
     parser.add_argument('--threads', action="store_true", help="Build OpenCV.js with threads optimization")
@@ -235,6 +228,8 @@ if __name__ == "__main__":
     parser.add_argument('--skip_config', action="store_true", help="Skip cmake config")
     parser.add_argument('--config_only', action="store_true", help="Only do cmake config")
     parser.add_argument('--enable_exception', action="store_true", help="Enable exception handling")
+    parser.add_argument('-DCMAKE_TOOLCHAIN_FILE', help="asd")
+    parser.add_argument('-DCMAKE_CROSSCOMPILING_EMULATOR', help="dsa")
     # Use flag --cmake option="-D...=ON" only for one argument, if you would add more changes write new cmake_option flags
     parser.add_argument('--cmake_option', action='append', help="Append CMake options")
     # Use flag --build_flags="-s USE_PTHREADS=0 -Os" for one and more arguments as in the example
@@ -252,10 +247,6 @@ if __name__ == "__main__":
 
     if 'EMMAKEN_JUST_CONFIGURE' in os.environ:
         del os.environ['EMMAKEN_JUST_CONFIGURE']  # avoid linker errors with NODERAWFS message then using 'emcmake' launcher
-
-    if args.emscripten_dir is None:
-        log.error("Cannot get Emscripten path, please use 'emcmake' launcher or specify it either by EMSCRIPTEN environment variable or --emscripten_dir option.")
-        sys.exit(-1)
 
     builder = Builder(args)
 
